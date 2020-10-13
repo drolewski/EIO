@@ -87,7 +87,8 @@ def conditional_entropy(attribute, passengers):
     entropy_cond = 0
     for attr in attribute_dict.keys():
         conditional_entropy_dict = get_conditional_entropy_dict(attribute, attr, passengers)
-        entropy_cond += calculate_conditional_entropy(conditional_entropy_dict, passengers)
+        partial_conditional_entropy = calculate_conditional_entropy(conditional_entropy_dict, passengers)
+        entropy_cond += partial_conditional_entropy
     return entropy_cond
 
 
@@ -115,6 +116,39 @@ def intrinsic_info(attribute, passengers):
 
 def gain_ratio(gain, intrinsic_info_value):
     return gain/intrinsic_info_value
+
+
+def print_tree(depth, entropy, passengers):
+    entropy_dict = get_entropy_dict(depth, passengers)
+    entropy_cond = 0
+    if depth < SURVIVED and depth != NAME:
+        for attr in entropy_dict.keys():
+            conditional_entropy_dict = get_conditional_entropy_dict(depth, attr, passengers)
+            partial_conditional_entropy = calculate_conditional_entropy(conditional_entropy_dict, passengers)
+            entropy_cond += partial_conditional_entropy
+            if conditional_entropy_dict.get("1") is None:
+                conditional_entropy_dict["1"] = 0
+            if conditional_entropy_dict.get("0") is None:
+                conditional_entropy_dict["0"] = 0
+            print("|" + "\t\t\t" * depth + "|" + attr)
+            if depth == SURVIVED - 1:
+                if conditional_entropy_dict.get("1") > conditional_entropy_dict.get("0"):
+                    print("|" + "\t\t\t" * depth + "|  decision: " + "1")
+                else:
+                    print("|" + "\t\t\t" * depth + "| decision: " + "0")
+            elif calculate_gain(entropy, entropy_cond) == 0:
+                if conditional_entropy_dict.get("1") > conditional_entropy_dict.get("0"):
+                    print("|" + "\t\t\t" * depth + "|  decision: " + "1")
+                    break
+                else:
+                    print("|" + "\t\t\t" * depth + "| decision: " + "0")
+                    break
+            print_tree(depth + 1, entropy, passengers)
+    elif depth == NAME:
+        print_tree(depth + 1, entropy, passengers)
+    else:
+        return
+    pass
 
 
 # Main
@@ -158,6 +192,10 @@ def main():
         gain_ratio_result = gain_ratio(gain_result, intrinsic_info_result)
         print("Gain Ratio: " + str(gain_ratio_result))
         print("")
+
+    print("DECISION TREE")
+    print("| TITANIC")
+    print_tree(1, entropy, passenger_list)
 
 
 if __name__ == "__main__":
